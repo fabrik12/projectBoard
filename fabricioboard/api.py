@@ -1,6 +1,6 @@
 # fabricioboard/api.py
 
-from flask import Blueprint, jsonify, abort
+from flask import Blueprint, jsonify, abort, request
 from fabricioboard.db import get_db
 
 # Creamos el Blueprint.
@@ -70,3 +70,123 @@ def get_project_data(project_code):
         'project': dict(project),
         'tasks': tasks_list
     })
+
+@bp.route('/tasks', methods=['POST'])
+def create_task():
+    """
+    Endpoint para crear una nueva tarea.
+    Espera un JSON con title, project_id, y column.
+    """
+    # 1. Obtener los datos del request JSON
+    data = request.get_json()
+
+    # 2. Validar que los datos necesarios están presentes
+    if not data or not all(k in data for k in ('title', 'project_id', 'column')):
+        abort(400, description="Faltan datos requeridos: se necesita 'title', 'project_id' y 'column'.")
+
+    title = data['title']
+    project_id = data['project_id']
+    column = data['column']
+    # La descripción es opcional
+    description = data.get('description', '') 
+    # El usuario asignado también es opcional
+    assigned_user_id = data.get('assigned_user_id', None)
+
+    try:
+        db = get_db()
+        
+        # 3. Calcular la nueva posición de la tarea (la ponemos al final de la columna)
+        cursor = db.execute(
+            'SELECT COUNT(id) as count FROM tasks WHERE project_id = ? AND column = ?',
+            (project_id, column)
+        )
+        position = cursor.fetchone()['count']
+
+        # 4. Insertar la nueva tarea en la base de datos
+        cursor = db.execute(
+            """
+            INSERT INTO tasks (project_id, assigned_user_id, title, description, column, position)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (project_id, assigned_user_id, title, description, column, position)
+        )
+        
+        new_task_id = cursor.lastrowid
+        db.commit()
+
+        # 5. Obtener la tarea recién creada para devolverla en la respuesta
+        new_task = db.execute(
+            'SELECT * FROM tasks WHERE id = ?', (new_task_id,)
+        ).fetchone()
+
+        # El código 201 significa "Created" y es la respuesta estándar para un POST exitoso.
+        return jsonify(dict(new_task)), 201
+
+    except db.IntegrityError:
+        # Esto podría pasar si, por ejemplo, el project_id no existe.
+        abort(400, description="Error de integridad, verifique que los IDs de proyecto y usuario son válidos.")
+
+@bp.route('/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    """
+    Endpoint para actualizar una tarea existente.
+    Acepta un JSON con los campos a modificar.
+    """
+    data = request.get_json()
+    if not data:
+        abort(400, description="No se enviaron datos para actualizar.")
+
+    db = get_db()
+    
+    # Verificamos primero que la tarea exista
+    task = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if task is None:
+        abort(404, description=f"La tarea con id {task_id} no fue encontrada.")
+
+    # Construimos la consulta de actualización dinámicamente
+    # para modificar solo los campos que se envían en el JSON.
+    fields = []
+    values = []
+    
+    # Campos permitidos para ser actualizados
+    allowed_fields = ['title', 'description', 'column', 'position', 'assigned_user_id']
+    
+    for field in allowed_fields:
+        if field in data:
+            fields.append(f"{field} = ?")
+            values.append(data[field])
+
+    if not fields:
+        abort(400, description="Ningún campo válido para actualizar fue proporcionado.")
+
+    values.append(task_id) # Añadimos el id de la tarea al final para el WHERE
+
+    query = f"UPDATE tasks SET {', '.join(fields)} WHERE id = ?"
+    
+    try:
+        db.execute(query, tuple(values))
+        db.commit()
+    except db.Error as e:
+        abort(500, description=f"Error en la base de datos: {e}")
+
+    # Devolvemos la tarea actualizada
+    updated_task = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    
+    return jsonify(dict(updated_task))
+
+
+@bp.route('/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    """
+    Endpoint para eliminar una tarea.
+    """
+    db = get_db()
+    # Verificamos que la tarea exista antes de intentar borrarla
+    task = db.execute('SELECT id FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if task is None:
+        abort(404, description=f"La tarea con id {task_id} no fue encontrada.")
+
+    db.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+    db.commit()
+    
+    return jsonify({'success': True, 'message': f'Tarea {task_id} eliminada correctamente.'})
