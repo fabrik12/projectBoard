@@ -1,6 +1,6 @@
 # fabricioboard/__init__.py
 import os
-from flask import Flask
+from flask import Flask, render_template
 
 def create_app(test_config=None):
     # crea y configura la app
@@ -30,5 +30,24 @@ def create_app(test_config=None):
     # Registro del Blueprint de la API
     from . import api
     app.register_blueprint(api.bp)
+
+    # --- Nueva Ruta para el Frontend ---
+    @app.route('/projects/<project_code>')
+    def board_view(project_code):
+        """
+        Renderiza el tablero Kanban para un proyecto específico.
+        """
+        # Obtenemos los datos del proyecto para pasarlos a la plantilla
+        from .db import get_db
+        db = get_db()
+        project = db.execute(
+            'SELECT * FROM projects WHERE code = ?', (project_code,)
+        ).fetchone()
+
+        if project is None:
+            from flask import abort
+            abort(404)
+
+        return render_template('index.html', project=project)
 
     return app

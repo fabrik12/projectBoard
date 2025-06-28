@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FabricioBoard - {{ project.name }}</title>
+  </head>
+  <body>
+    <header>
+      <h1>Tablero: {{ project.name }} ({{ project.code }})</h1>
+    </header>
+    <main>
+      <div id="kanban-board" class="kanban-container"></div>
+    </main>
+
+    <script>
+      const PROJECT_CODE = "{{ project.code }}";
+    </script>
+
+    <script src="{{ url_for('static', filename='js/board.js') }}"></script>
+  </body>
+</html>
