@@ -24,14 +24,17 @@ def admin_required(view):
     return wrapped_view
 
 @bp.route('/dashboard')
-@admin_required # <-- ¡Aquí usamos nuestro guardián!
+@admin_required
 def dashboard():
-    """Muestra el dashboard principal de administración."""
+    """
+    Muestra el dashboard. Ahora también obtiene la lista de usuarios y etiquetas.
+    """
     db = get_db()
-    projects = db.execute(
-        'SELECT id, name, code FROM projects ORDER BY name ASC'
-    ).fetchall()
-    return render_template('admin/dashboard.html', projects=projects)
+    projects = db.execute('SELECT id, name, code FROM projects ORDER BY name ASC').fetchall()
+    users = db.execute('SELECT id, username, full_name FROM users ORDER BY username ASC').fetchall()
+    tags = db.execute('SELECT id, name, color FROM tags ORDER BY name ASC').fetchall()
+    
+    return render_template('admin/dashboard.html', projects=projects, users=users, tags=tags)
 
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
@@ -95,4 +98,58 @@ def delete_project(project_id):
     # todas las tareas asociadas a este proyecto también se eliminarán automáticamente.
     # ¡Una buena decisión de diseño al principio nos ahorra trabajo ahora!
     
+    return redirect(url_for('admin.dashboard'))
+
+
+# --- ¡NUEVAS RUTAS DE GESTIÓN DE USUARIOS! ---
+@bp.route('/users/create', methods=['POST'])
+@admin_required
+def create_user():
+    username = request.form['username']
+    full_name = request.form['full_name']
+    
+    if not username:
+        flash('El nombre de usuario es obligatorio.')
+    else:
+        db = get_db()
+        db.execute('INSERT INTO users (username, full_name) VALUES (?, ?)', (username, full_name))
+        db.commit()
+        flash(f'Usuario "{username}" creado.')
+        
+    return redirect(url_for('admin.dashboard'))
+
+@bp.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    db = get_db()
+    db.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    db.commit()
+    flash('Usuario eliminado.')
+    return redirect(url_for('admin.dashboard'))
+
+
+# --- ¡NUEVAS RUTAS DE GESTIÓN DE ETIQUETAS! ---
+@bp.route('/tags/create', methods=['POST'])
+@admin_required
+def create_tag():
+    name = request.form['name']
+    color = request.form['color']
+    
+    if not name:
+        flash('El nombre de la etiqueta es obligatorio.')
+    else:
+        db = get_db()
+        db.execute('INSERT INTO tags (name, color) VALUES (?, ?)', (name, color))
+        db.commit()
+        flash(f'Etiqueta "{name}" creada.')
+
+    return redirect(url_for('admin.dashboard'))
+
+@bp.route('/tags/<int:tag_id>/delete', methods=['POST'])
+@admin_required
+def delete_tag(tag_id):
+    db = get_db()
+    db.execute('DELETE FROM tags WHERE id = ?', (tag_id,))
+    db.commit()
+    flash('Etiqueta eliminada.')
     return redirect(url_for('admin.dashboard'))

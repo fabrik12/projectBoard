@@ -3,10 +3,15 @@
 from flask import Blueprint, jsonify, abort, request
 from fabricioboard.db import get_db
 
+from .extensions import limiter
+
 # Creamos el Blueprint.
 # 'api' es el nombre del blueprint.
 # url_prefix='/api' añadirá /api a todas las rutas de este archivo.
 bp = Blueprint('api', __name__, url_prefix='/api')
+
+# --- ¡NUEVO! Aplicamos un límite por defecto a TODAS las rutas de este blueprint ---
+bp.limit = limiter.shared_limit("100 per hour; 20 per minute", scope="api")
 
 @bp.route('/projects/<project_code>', methods=['GET'])
 def get_project_data(project_code):
@@ -72,6 +77,7 @@ def get_project_data(project_code):
     })
 
 @bp.route('/tasks', methods=['POST'])
+@limiter.limit("5 per minute") # Decorador específico para esta ruta
 def create_task():
     """
     Endpoint para crear una nueva tarea.

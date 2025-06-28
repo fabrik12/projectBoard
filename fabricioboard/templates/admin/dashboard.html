@@ -8,11 +8,32 @@
       href="{{ url_for('static', filename='css/style.css') }}"
     />
     <style>
-      /* Estilos rápidos para el dashboard */
       .admin-container {
-        max-width: 800px;
+        max-width: 900px;
         margin: 20px auto;
         padding: 20px;
+      }
+      .tab-nav {
+        border-bottom: 2px solid #ccc;
+        display: flex;
+      }
+      .tab-btn {
+        background: none;
+        border: none;
+        padding: 15px 20px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .tab-btn.active {
+        border-bottom: 2px solid #0079bf;
+        font-weight: bold;
+      }
+      .tab-content {
+        display: none;
+        padding-top: 20px;
+      }
+      .tab-content.active {
+        display: block;
       }
       table {
         width: 100%;
@@ -28,49 +49,203 @@
       th {
         background-color: #f2f2f2;
       }
+      form {
+        margin-top: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      input[type="color"] {
+        padding: 0;
+        border: none;
+        height: 38px;
+      }
     </style>
   </head>
   <body>
     <div class="admin-container">
       <header>
-        <h1>Dashboard de Proyectos</h1>
+        <h1>Dashboard de Administración</h1>
         <a href="{{ url_for('admin.logout') }}">Cerrar Sesión</a>
       </header>
 
-      <section id="create-project">
-        <h2>Crear Nuevo Proyecto</h2>
-        <form method="post" action="{{ url_for('admin.create_project') }}">
-          <label for="name">Nombre del Proyecto:</label>
-          <input type="text" name="name" id="name" required />
-          <label for="code">Código de Acceso (ej. PROJ-XYZ):</label>
-          <input type="text" name="code" id="code" required />
-          <button type="submit">Crear</button>
-        </form>
-      </section>
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="projects">Proyectos</button>
+        <button class="tab-btn" data-tab="users">Usuarios</button>
+        <button class="tab-btn" data-tab="tags">Etiquetas</button>
+      </div>
 
-      <section id="project-list">
-        <h2>Proyectos Existentes</h2>
-        <table>
-          <tbody>
-            {% for project in projects %}
-            <tr>
-              <td>{{ project.id }}</td>
-              <td>{{ project.name }}</td>
-              <td><code>{{ project.code }}</code></td>
-              <td>
-                <form
-                  method="post"
-                  action="{{ url_for('admin.delete_project', project_id=project.id) }}"
-                  onsubmit="return confirm('¿Estás seguro de que quieres eliminar este proyecto y TODAS sus tareas?');"
-                >
-                  <button type="submit">Eliminar</button>
-                </form>
-              </td>
-            </tr>
-            {% else %} {% endfor %}
-          </tbody>
-        </table>
-      </section>
+      <div id="projects" class="tab-content active">
+        <section id="create-project">
+          <h2>Crear Nuevo Proyecto</h2>
+          <form method="post" action="{{ url_for('admin.create_project') }}">
+            <input
+              type="text"
+              name="name"
+              placeholder="Nombre del Proyecto"
+              required
+            />
+            <input
+              type="text"
+              name="code"
+              placeholder="Código (ej. PROJ-XYZ)"
+              required
+            />
+            <button type="submit">Crear Proyecto</button>
+          </form>
+        </section>
+
+        <section id="project-list">
+          <h2>Proyectos Existentes</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre del Proyecto</th>
+                <th>Código de Acceso</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for project in projects %}
+              <tr>
+                <td>{{ project.id }}</td>
+                <td>{{ project.name }}</td>
+                <td><code>{{ project.code }}</code></td>
+                <td>
+                  <form
+                    method="post"
+                    action="{{ url_for('admin.delete_project', project_id=project.id) }}"
+                    onsubmit="return confirm('¿Estás seguro de que quieres eliminar este proyecto y TODAS sus tareas?');"
+                  >
+                    <button type="submit">Eliminar</button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4">No hay proyectos todavía. ¡Crea uno!</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div id="users" class="tab-content">
+        <section id="create-user">
+          <h2>Crear Nuevo Usuario</h2>
+          <form method="post" action="{{ url_for('admin.create_user') }}">
+            <input
+              type="text"
+              name="username"
+              placeholder="Username (ej. f.aldunate)"
+              required
+            />
+            <input type="text" name="full_name" placeholder="Nombre Completo" />
+            <button type="submit">Crear Usuario</button>
+          </form>
+        </section>
+        <section id="user-list">
+          <h2>Usuarios Existentes</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Nombre Completo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in users %}
+              <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.full_name }}</td>
+                <td>
+                  <form
+                    method="post"
+                    action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                    onsubmit="return confirm('¿Seguro?');"
+                  >
+                    <button type="submit">Eliminar</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div id="tags" class="tab-content">
+        <section id="create-tag">
+          <h2>Crear Nueva Etiqueta</h2>
+          <form method="post" action="{{ url_for('admin.create_tag') }}">
+            <input
+              type="text"
+              name="name"
+              placeholder="Nombre de la etiqueta"
+              required
+            />
+            <input type="color" name="color" value="#FFFFFF" />
+            <button type="submit">Crear Etiqueta</button>
+          </form>
+        </section>
+        <section id="tag-list">
+          <h2>Etiquetas Existentes</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Color</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tag in tags %}
+              <tr>
+                <td>{{ tag.id }}</td>
+                <td>
+                  <span
+                    class="tag-pill"
+                    style="background-color:{{ tag.color }};"
+                    >{{ tag.name }}</span
+                  >
+                </td>
+                <td><code>{{ tag.color }}</code></td>
+                <td>
+                  <form
+                    method="post"
+                    action="{{ url_for('admin.delete_tag', tag_id=tag.id) }}"
+                    onsubmit="return confirm('¿Seguro?');"
+                  >
+                    <button type="submit">Eliminar</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </div>
     </div>
+
+    <script>
+      const tabs = document.querySelectorAll(".tab-btn");
+      const contents = document.querySelectorAll(".tab-content");
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((item) => item.classList.remove("active"));
+          contents.forEach((item) => item.classList.remove("active"));
+
+          tab.classList.add("active");
+          document.getElementById(tab.dataset.tab).classList.add("active");
+        });
+      });
+    </script>
   </body>
 </html>

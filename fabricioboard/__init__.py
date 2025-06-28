@@ -2,6 +2,14 @@
 import os
 from flask import Flask, render_template
 
+# --- ¡NUEVA IMPORTACIÓN! ---
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+from flask_cors import CORS
+
+from .extensions import limiter
+
 def create_app(test_config=None):
     # crea y configura la app
     app = Flask(__name__, instance_relative_config=True)
@@ -22,6 +30,13 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
+
+    # Se inicializa el limitador, usando la dirección IP del visitante como clave.
+    limiter.init_app(app)
+
+    # Esto permite que cualquier origen (*) haga peticiones a las rutas bajo /api/
+    # En producción, se puede restringir a un dominio específico del frontend.
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # Registro de la base de datos
     from . import db
