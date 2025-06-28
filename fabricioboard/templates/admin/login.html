@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Admin Login</title>
+  </head>
+  <body>
+    <header>
+      <h1>Acceso de Administrador</h1>
+    </header>
+    <section>
+      <form method="post">
+        <label for="password">Clave Maestra</label>
+        <input type="password" name="password" id="password" required />
+        <button type="submit">Ingresar</button>
+      </form>
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <ul class="flashes">
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %} {% endwith %}
+    </section>
+  </body>
+</html>

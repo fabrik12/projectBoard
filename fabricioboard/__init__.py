@@ -31,6 +31,10 @@ def create_app(test_config=None):
     from . import api
     app.register_blueprint(api.bp)
 
+    # Registro del Blueprint de Administración
+    from . import admin
+    app.register_blueprint(admin.bp)
+
     # --- Nueva Ruta para el Frontend ---
     @app.route('/projects/<project_code>')
     def board_view(project_code):

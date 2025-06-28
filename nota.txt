@@ -1,2 +1,4 @@
 export FLASK_APP=fabricioboard
 export FLASK_ENV=development
+
+export ADMIN_SECRET_KEY=tu-clave-super-secreta-aqui
