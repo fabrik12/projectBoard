@@ -1,0 +1,105 @@
+/* fabricioboard/static/css/style.css */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f4f5f7;
+    margin: 0;
+    padding: 20px;
+}
+
+header h1 {
+    color: #172b4d;
+}
+
+/* --- El contenedor principal del tablero Kanban --- */
+.kanban-container {
+    display: flex; /* ¡La magia de Flexbox! Pone los elementos hijos en una fila. */
+    flex-direction: row; /* Dirección horizontal */
+    gap: 15px; /* Espacio entre las columnas */
+    align-items: flex-start; /* Alinea las columnas en la parte superior */
+}
+
+/* --- Estilos para cada columna individual --- */
+.kanban-column {
+    background-color: #ebecf0; /* Un gris claro para las columnas */
+    border-radius: 3px;
+    padding: 10px;
+    min-width: 280px; /* Ancho mínimo de cada columna */
+    width: 280px; /* Ancho fijo */
+    
+    /* Contenedor flex para las futuras tarjetas */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.kanban-column h2 {
+    font-size: 16px;
+    color: #172b4d;
+    margin: 0 0 10px 0;
+    padding: 0 5px;
+}
+
+/* (Próximamente) Estilos para las tarjetas de tareas */
+.kanban-card {
+    background-color: #ffffff;
+    border-radius: 3px;
+    padding: 10px;
+    box-shadow: 0 1px 0 rgba(9,30,66,.25);
+    cursor: pointer;
+}
+
+/* --- Estilos para las tarjetas de tareas --- */
+.kanban-card {
+    background-color: #ffffff;
+    border-radius: 3px;
+    padding: 10px;
+    box-shadow: 0 1px 1px rgba(9,30,66,.15);
+    cursor: grab; /* Cambiamos el cursor para indicar que es movible */
+    margin-bottom: 5px; /* Espacio entre tarjetas */
+}
+
+.kanban-card:hover {
+    background-color: #f4f5f7;
+}
+
+.card-title {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #172b4d;
+}
+
+.card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.tag-pill {
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    border-radius: 10px;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: flex-end; /* Alinea los elementos del footer a la derecha */
+    align-items: center;
+    margin-top: 10px;
+}
+
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #dfe1e6;
+    color: #172b4d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
