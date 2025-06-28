@@ -18,6 +18,13 @@ def create_app(test_config=None):
         DATABASE=os.path.join(app.instance_path, 'database.db'),
     )
 
+    app.config['RATELIMIT_STORAGE_URI'] = os.environ.get("REDIS_URL")
+
+
+    # Se inicializa el limitador, usando la dirección IP del visitante como clave.
+    limiter.init_app(app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+
     if test_config is None:
         # carga la configuración de la instancia, si existe
         app.config.from_pyfile('config.py', silent=True)
@@ -25,18 +32,12 @@ def create_app(test_config=None):
         # carga la configuración de prueba
         app.config.from_mapping(test_config)
 
+
     # asegúrate de que la carpeta de instancia exista
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
-    
-    limiter_storage_uri = os.environ.get("REDIS_URL")
-    if limiter_storage_uri:
-        limiter.storage.storage_uri = limiter_storage_uri
-
-    # Se inicializa el limitador, usando la dirección IP del visitante como clave.
-    limiter.init_app(app)
 
     # Esto permite que cualquier origen (*) haga peticiones a las rutas bajo /api/
     # En producción, se puede restringir a un dominio específico del frontend.
