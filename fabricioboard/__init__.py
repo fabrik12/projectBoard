@@ -30,6 +30,10 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
+    
+    limiter_storage_uri = os.environ.get("REDIS_URL")
+    if limiter_storage_uri:
+        limiter.storage.storage_uri = limiter_storage_uri
 
     # Se inicializa el limitador, usando la dirección IP del visitante como clave.
     limiter.init_app(app)
