@@ -13,6 +13,7 @@
     <header>
       <h1>Tablero: {{ project.name }} ({{ project.code }})</h1>
     </header>
+    <div id="filter-container" class="filter-container"></div>
     <main>
       <div id="kanban-board" class="kanban-container"></div>
     </main>
@@ -24,5 +25,29 @@
     <script src="{{ url_for('static', filename='js/board.js') }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+    <div id="task-modal" class="task-modal">
+      <div class="modal-content">
+        <span class="close-modal" id="close-modal-btn">&times;</span>
+
+        <h2 id="modal-task-title">Título de la Tarea irá aquí</h2>
+
+        <div class="modal-section">
+          <h3>Descripción</h3>
+          <p id="modal-task-description">La descripción de la tarea...</p>
+        </div>
+
+        <div class="modal-section">
+          <h3>Asignar Usuario</h3>
+          <div id="modal-users-list" class="assignment-list"></div>
+        </div>
+
+        <div class="modal-section">
+          <h3>Asignar Etiquetas</h3>
+          <div id="modal-tags-list" class="assignment-list"></div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

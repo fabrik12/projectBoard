@@ -190,3 +190,48 @@ def delete_task(task_id):
     db.commit()
     
     return jsonify({'success': True, 'message': f'Tarea {task_id} eliminada correctamente.'})
+
+
+@bp.route('/tasks/<int:task_id>/tags', methods=['POST'])
+def assign_tag_to_task(task_id):
+    """
+    Asigna una etiqueta existente a una tarea existente.
+    Espera un JSON con: {"tag_id": <id>}
+    """
+    data = request.get_json()
+    if not data or 'tag_id' not in data:
+        abort(400, description="Falta 'tag_id' en el cuerpo del request.")
+    
+    tag_id = data['tag_id']
+    db = get_db()
+    
+    try:
+        db.execute(
+            'INSERT INTO task_tags (task_id, tag_id) VALUES (?, ?)',
+            (task_id, tag_id)
+        )
+        db.commit()
+    except db.IntegrityError:
+        # Esto puede pasar si la tarea o el tag no existen, o si la asignación ya existe.
+        abort(400, description="Error de integridad: la tarea/etiqueta no existe o la asignación ya fue hecha.")
+        
+    return jsonify({'success': True, 'message': f'Etiqueta {tag_id} asignada a la tarea {task_id}.'}), 201
+
+@bp.route('/tasks/<int:task_id>/tags/<int:tag_id>', methods=['DELETE'])
+def unassign_tag_from_task(task_id, tag_id):
+    """
+    Desasigna una etiqueta de una tarea.
+    """
+    db = get_db()
+    # La sentencia DELETE no da error si la fila no existe, pero es buena práctica verificar.
+    result = db.execute(
+        'DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?',
+        (task_id, tag_id)
+    )
+    db.commit()
+
+    if result.rowcount == 0:
+        # Si no se borró ninguna fila, es porque la asignación no existía.
+        abort(404, description="La asignación especificada no fue encontrada.")
+
+    return jsonify({'success': True, 'message': f'Etiqueta {tag_id} desasignada de la tarea {task_id}.'})
