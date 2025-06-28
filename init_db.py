@@ -2,65 +2,9 @@
 
 import sqlite3
 
-DB_NAME = 'database.db'
+DB_NAME = 'instance/database.db'
 connection = sqlite3.connect(DB_NAME)
 cursor = connection.cursor()
-
-# Usamos executescript para ejecutar múltiples sentencias SQL a la vez.
-# Esto es más eficiente y asegura que todo se ejecute en una sola transacción.
-cursor.executescript("""
--- Eliminar tablas si ya existen para asegurar un estado limpio en cada ejecución
-DROP TABLE IF EXISTS task_tags;
-DROP TABLE IF EXISTS tasks;
-DROP TABLE IF EXISTS tags;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS projects;
-
--- Creación de las tablas en orden de dependencia
--- (Las tablas sin llaves foráneas primero)
-
-CREATE TABLE projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL
-);
-
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    full_name TEXT
-);
-
-CREATE TABLE tags (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    color TEXT DEFAULT '#FFFFFF'
-);
-
--- Las tablas con llaves foráneas se crean después
-CREATE TABLE tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER NOT NULL,
-    assigned_user_id INTEGER,
-    title TEXT NOT NULL,
-    description TEXT,
-    column TEXT NOT NULL,
-    position INTEGER NOT NULL,
-    FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
-    FOREIGN KEY (assigned_user_id) REFERENCES users (id) ON DELETE SET NULL
-);
-
-CREATE TABLE task_tags (
-    task_id INTEGER NOT NULL,
-    tag_id INTEGER NOT NULL,
-    PRIMARY KEY (task_id, tag_id),
-    FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE
-);
-
-""")
-
-print("Tablas creadas con éxito.")
 
 # --- Inserción de Datos de Ejemplo ---
 try:
