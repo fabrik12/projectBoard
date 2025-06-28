@@ -26,56 +26,144 @@ async function fetchAndRenderBoard(projectCode) {
 }
 
 
+// fabricioboard/static/js/board.js
+
 function renderBoard(data) {
     const boardContainer = document.getElementById('kanban-board');
-    boardContainer.innerHTML = ''; // Limpiamos el contenedor
+    boardContainer.innerHTML = '';
 
     const columns = ['Por Hacer', 'En Progreso', 'Hecho'];
 
     columns.forEach(columnName => {
         const columnEl = document.createElement('div');
         columnEl.className = 'kanban-column';
-        columnEl.innerHTML = `<h2>${columnName}</h2>`;
+        // Añadimos un atributo para identificar la columna fácilmente
+        columnEl.setAttribute('data-column-name', columnName);
 
-        // Filtramos las tareas que pertenecen a esta columna
+        const columnTitle = document.createElement('h2');
+        columnTitle.textContent = columnName;
+        columnEl.appendChild(columnTitle);
+
+        // Creamos un contenedor específico para las tarjetas
+        const cardsContainer = document.createElement('div');
+        cardsContainer.className = 'cards-container';
+
         const columnTasks = data.tasks.filter(task => task.column === columnName);
 
-        // --- ¡NUEVA LÓGICA AQUÍ! ---
-        // Iteramos sobre las tareas de la columna para crear sus tarjetas
         columnTasks.forEach(task => {
             const cardEl = document.createElement('div');
             cardEl.className = 'kanban-card';
-            cardEl.setAttribute('data-task-id', task.id); // Guardamos el ID de la tarea
+            cardEl.setAttribute('data-task-id', task.id);
 
-            // Renderizamos las etiquetas (tags)
+            // ... (toda la lógica para el innerHTML de la tarjeta sigue igual)
             let tagsHTML = '<div class="card-tags">';
             task.tags.forEach(tag => {
                 tagsHTML += `<span class="tag-pill" style="background-color:${tag.color};">${tag.name}</span>`;
             });
             tagsHTML += '</div>';
 
-            // Renderizamos el usuario asignado (si existe)
             let userHTML = '';
             if (task.assigned_user) {
-                // Usamos la inicial del nombre de usuario como un "avatar" simple
                 const initial = task.assigned_user.username.charAt(0).toUpperCase();
                 userHTML = `<div class="user-avatar" title="${task.assigned_user.username}">${initial}</div>`;
             }
 
-            // Construimos el contenido completo de la tarjeta
             cardEl.innerHTML = `
+                <div class="card-header">
+                    <span class="delete-task" title="Eliminar tarea">&times;</span>
+                </div>
                 ${tagsHTML}
                 <p class="card-title">${task.title}</p>
                 <div class="card-footer">
                     ${userHTML}
                 </div>
             `;
+            // --- ¡NUEVA LÓGICA DE EVENTOS AQUÍ! ---
+            // Añadimos el listener para el botón de eliminar
+            const deleteButton = cardEl.querySelector('.delete-task');
+            deleteButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Evita que se disparen otros eventos en la tarjeta
 
-            // Añadimos la tarjeta a la columna
-            columnEl.appendChild(cardEl);
+                const confirmation = confirm('¿Estás seguro de que quieres eliminar esta tarea?');
+                if (confirmation) {
+                    deleteTask(task.id);
+                }
+            });
+            // --- Fin de la lógica del innerHTML ---
+
+            cardsContainer.appendChild(cardEl);
         });
-        // --- FIN DE LA NUEVA LÓGICA ---
 
+        columnEl.appendChild(cardsContainer);
         boardContainer.appendChild(columnEl);
+
+        // --- ¡LA MAGIA DE SORTABLEJS EMPIEZA AQUÍ! ---
+        new Sortable(cardsContainer, {
+            group: 'kanban', // Permite mover tarjetas entre columnas con el mismo grupo
+            animation: 150,  // Animación suave al mover
+            ghostClass: 'sortable-ghost', // Clase CSS para el "fantasma" de la tarjeta que se arrastra
+
+            // Esta función se dispara cuando sueltas una tarjeta
+            onEnd: function (evt) {
+                const taskId = evt.item.getAttribute('data-task-id');
+                const newColumnName = evt.to.parentElement.getAttribute('data-column-name');
+                const newIndex = evt.newDraggableIndex;
+
+                // Llamamos a nuestra API para persistir el cambio
+                updateTaskPosition(taskId, newColumnName, newIndex);
+            }
+        });
     });
+}
+
+// --- NUEVA FUNCIÓN ASÍNCRONA PARA ACTUALIZAR EL BACKEND ---
+async function updateTaskPosition(taskId, newColumn, newPosition) {
+    try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                column: newColumn,
+                position: newPosition,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Falló la actualización de la tarea.');
+        }
+
+        console.log(`Tarea ${taskId} movida a ${newColumn}, posición ${newPosition}`);
+        // Opcional: podrías recargar todo el tablero o simplemente confiar en que el cambio se guardó
+
+    } catch (error) {
+        console.error("Error al actualizar la posición:", error);
+        // Aquí podrías implementar una alerta para el usuario
+        alert("No se pudo mover la tarea. Por favor, refresca la página.");
+    }
+}
+
+async function deleteTask(taskId) {
+    try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            throw new Error('Falló la eliminación de la tarea.');
+        }
+
+        // Si la API confirma la eliminación, eliminamos la tarjeta del DOM
+        const cardToRemove = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (cardToRemove) {
+            cardToRemove.remove();
+        }
+
+        console.log(`Tarea ${taskId} eliminada.`);
+
+    } catch (error) {
+        console.error("Error al eliminar la tarea:", error);
+        alert("No se pudo eliminar la tarea.");
+    }
 }
